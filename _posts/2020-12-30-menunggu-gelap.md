@@ -1,4 +1,5 @@
 ---
+post_id: 6
 title: "Menunggu Gelap, Merangkul Senja"
 slug: 'menunggu-gelap'
 date: 2020-12-30 00:21:26

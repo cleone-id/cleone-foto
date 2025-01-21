@@ -1,4 +1,5 @@
 ---
+post_id: 11
 title: "Wayang Kulit"
 slug: 'wayang-kulit'
 date: 2020-12-30 12:21:26
