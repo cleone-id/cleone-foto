@@ -1,0 +1,60 @@
+---
+layout: default
+title: "Foto Cleone.ID"
+---
+
+<!-- Gallery -->
+<div id="portfolio" class="section gray">
+    <div class="b row">
+    {% for post in site.posts %}
+        <div class="col l4 m6 s12 gallery-item gallery-expand ce {{ post.categories }}">
+            <div class="gallery-curve-wrapper">
+                <a class="gallery-cover gray" id="{{ post.slug }}">
+                    <img class="responsive-img" src="{{ post.image }}" data-media="image" data-title="{{ post.title }}" data-src="{{ post.image }}" data-description="{{ post.description }} - {{ post.artist }} at {{ post.location }}" alt="placeholder" crossorigin="anonymous" />
+                </a>
+                <div class="gallery-overlay">
+                    <div class="overlay-header">
+                        <div class="overlay-title">{{ post.title }}</div>
+                    </div>
+                </div>
+                <div class="gallery-body">
+                    <div class="title-wrapper">
+                        <h3>{{ post.title }}</h3>
+                        <span class="gj">{{ post.location }}</span>
+                    </div>
+                    <p class="fi">
+                        {{ post.description }}
+                    </p>
+                </div>
+                <div class="gallery-action">
+                    <a class="btn-floating btn-large waves-effect waves-light"><i class="material-icons">favorite</i></a>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+</div>
+<!-- /.container -->
+
+
+<div class="fixed-action-btn click-to-toggle">
+    <a id="bg-control" class="btn-floating btn-large grey darken-4 pulse tooltipped" data-position="left" data-delay="50" data-tooltip="Ambience Control">
+        <i class="material-icons">music_note</i>
+    </a>
+    <ul>
+        <li><a id="vid_control" class="btn-floating btn-large red tooltipped" onclick="playVid();" data-position="left" data-delay="50" data-tooltip="Play/Stop"><i class="material-icons large">play_arrow</i></a></li>
+        <li><a class="btn-floating grey darken-3 waves-effect tooltipped" onclick="nextVideo();" data-position="left" data-delay="50" data-tooltip="Next Video"><i class="material-icons">skip_next</i></a></li>
+        <li><a class="btn-floating grey darken-3 waves-effect tooltipped" onclick="prevVideo();" data-position="left" data-delay="50" data-tooltip="Previous Video"><i class="material-icons">skip_previous</i></a></li>
+        <li><a class="btn-floating grey darken-3 waves-effect tooltipped" onclick="setVolume('up');" data-position="left" data-delay="50" data-tooltip="Volume Up"><i class="material-icons">volume_up</i></a></li>
+        <li><a class="btn-floating grey darken-3 waves-effect tooltipped" onclick="setVolume('down');" data-position="left" data-delay="50" data-tooltip="Volume Down"><i class="material-icons">volume_down</i></a></li>
+    </ul>
+</div>
+
+<!-- Tap Target Structure -->
+<div class="tap-target white-text" style="background-color: #3a3a3a;" data-activates="bg-control">
+    <div class="tap-target-content font-style">
+        <h1>Selamat Datang</h1>
+        <p>Tap Play untuk memutar Ambience Sound</p>
+    </div>
+</div>
+
