@@ -7,56 +7,156 @@ title: "Foto Cleone.ID"
 <div id="portfolio" class="section gray">
     <div class="b row" id="photo-container">
         <script>
+            // Configuration options for optimization
+            const imageConfig = {
+                sizes: {
+                    thumbnail: 300,  // Thumbnail size for initial display
+                    full: 1200       // Maximum size for full view
+                },
+                quality: 80,         // Quality parameter for images (0-100)
+                lazyLoadOffset: 200  // Pixels before image enters viewport to start loading
+            };
+
+            // Function to generate optimized image URL with params
+            function getOptimizedImageUrl(originalUrl, width, quality) {
+                // Check if URL already contains query parameters
+                const separator = originalUrl.includes('?') ? '&' : '?';
+                
+                // Assuming CDN supports width and quality parameters
+                // Modify these parameters based on your CDN's API
+                return `${originalUrl}${separator}w=${width}&q=${quality}&auto=format`;
+            }
+
+            // Create a placeholder while image loads
+            function createPlaceholder(width, height) {
+                return `data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"%3E%3Crect width="100%25" height="100%25" fill="%23f0f0f0"/%3E%3C/svg%3E`;
+            }
+
+            // Lazy load implementation
+            function setupLazyLoading() {
+                const lazyImages = document.querySelectorAll('.lazy-image');
+                
+                if ('IntersectionObserver' in window) {
+                    const imageObserver = new IntersectionObserver(function(entries, observer) {
+                        entries.forEach(function(entry) {
+                            if (entry.isIntersecting) {
+                                const img = entry.target;
+                                img.src = img.dataset.src;
+                                img.classList.remove('lazy-image');
+                                imageObserver.unobserve(img);
+                                
+                                // Load high-res version in background for gallery view
+                                const fullImage = new Image();
+                                fullImage.src = img.dataset.fullsrc;
+                                img.dataset.loaded = "true";
+                            }
+                        });
+                    }, {
+                        rootMargin: `${imageConfig.lazyLoadOffset}px 0px`
+                    });
+
+                    lazyImages.forEach(function(img) {
+                        imageObserver.observe(img);
+                    });
+                } else {
+                    // Fallback for browsers without IntersectionObserver
+                    lazyImages.forEach(function(img) {
+                        img.src = img.dataset.src;
+                    });
+                }
+            }
+
+            // Load and process the JSON data
             fetch('https://cdn.cleone.id/foto.json')
                 .then(response => response.json())
                 .then(data => {
-                const container = document.getElementById('photo-container');
-
-                data.forEach((item, index) => {
-                    const div = document.createElement('div');
-                    div.className = `col l4 m6 s12 gallery-item gallery-expand ce`;
-                    div.innerHTML = `
-                    <div class="gallery-curve-wrapper">
-                        <a class="gallery-cover gray">
-                            <img class="responsive-img" src="${item.url}" alt="placeholder" crossorigin="anonymous" />
-                        </a>
-                        <div class="gallery-overlay spotlight" data-media="image" data-title="${item.caption}" data-src="${item.url}" data-description="${item.username}">
-                            <div class="overlay-header">
-                                <div class="overlay-title">${item.caption}</div>
+                    const container = document.getElementById('photo-container');
+                    const fragment = document.createDocumentFragment(); // Use document fragment for better performance
+                    
+                    // Prefilter the data to optimize network requests
+                    // For example, you might want to limit initial load to 20 images
+                    const initialBatch = data.slice(0, 20);
+                    
+                    initialBatch.forEach((item, index) => {
+                        // Estimate aspect ratio based on common photo dimensions if not available
+                        const aspectRatio = item.aspectRatio || 3/2; // Default to 3:2 if unknown
+                        const estimatedHeight = Math.round(imageConfig.sizes.thumbnail / aspectRatio);
+                        
+                        // Create optimized URLs for different sizes
+                        const thumbnailUrl = getOptimizedImageUrl(item.url, imageConfig.sizes.thumbnail, imageConfig.quality);
+                        const fullUrl = getOptimizedImageUrl(item.url, imageConfig.sizes.full, imageConfig.quality);
+                        
+                        const div = document.createElement('div');
+                        div.className = `col l4 m6 s12 gallery-item gallery-expand ce`;
+                        div.innerHTML = `
+                        <div class="gallery-curve-wrapper">
+                            <a class="gallery-cover gray">
+                                <img 
+                                    class="responsive-img lazy-image" 
+                                    src="${createPlaceholder(imageConfig.sizes.thumbnail, estimatedHeight)}" 
+                                    data-src="${thumbnailUrl}" 
+                                    data-fullsrc="${fullUrl}" 
+                                    alt="${item.caption || 'Gallery image'}" 
+                                    width="${imageConfig.sizes.thumbnail}" 
+                                    height="${estimatedHeight}"
+                                    loading="lazy"
+                                    crossorigin="anonymous" />
+                            </a>
+                            <div class="gallery-overlay spotlight" data-media="image" data-title="${item.caption}" data-src="${fullUrl}" data-description="${item.username}">
+                                <div class="overlay-header">
+                                    <div class="overlay-title">${item.caption}</div>
+                                </div>
+                            </div>
+                            <div class="gallery-body">
+                                <div class="title-wrapper">
+                                    <h3>${item.caption}</h3>
+                                    <span class="gj">${item.username}</span>
+                                </div>
+                                <p class="fi">
+                                    ${item.caption}
+                                </p>
+                            </div>
+                            <div class="gallery-action">
+                                <a class="btn-floating btn-large waves-effect waves-light"><i class="material-icons">favorite</i></a>
                             </div>
                         </div>
-                        <div class="gallery-body">
-                            <div class="title-wrapper">
-                                <h3>${item.caption}</h3>
-                                <span class="gj">${item.username}</span>
-                            </div>
-                            <p class="fi">
-                                ${item.caption}
-                            </p>
-                        </div>
-                        <div class="gallery-action">
-                            <a class="btn-floating btn-large waves-effect waves-light"><i class="material-icons">favorite</i></a>
-                        </div>
-                    </div>
-                `;
-                    container.appendChild(div);
-                });
+                        `;
+                        fragment.appendChild(div);
+                    });
+                    
+                    // Add all elements at once for better performance
+                    container.appendChild(fragment);
+                    
+                    // Initialize lazy loading
+                    setupLazyLoading();
 
-                // Tunggu semua gambar selesai di-load
-                const $masonry = $('#photo-container');
-                $masonry.imagesLoaded(function () {
-                    // Shuffle
-                    for (let i = container.children.length; i >= 0; i--) {
-                    container.appendChild(container.children[Math.random() * i | 0]);
+                    // Setup masonry layout with imagesLoaded
+                    const $masonry = $('#photo-container');
+                    $masonry.imagesLoaded(function () {
+                        // Shuffle items (if still needed)
+                        const items = Array.from(container.children);
+                        for (let i = items.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            container.appendChild(items[j]);
+                        }
+
+                        // Layout masonry
+                        $masonry.masonry({
+                            itemSelector: '.gallery-item',
+                            columnWidth: '.gallery-item',
+                            percentPosition: true,
+                            transitionDuration: '0.3s'
+                        });
+                    });
+                    
+                    // Load remaining images if needed (for infinite scroll implementation)
+                    if (data.length > initialBatch.length) {
+                        // Implement pagination or infinite scroll here
+                        // This is where you'd add code to load more images as user scrolls
                     }
-
-                    // Layout ulang masonry
-                    $masonry.masonry('reloadItems');
-                    $masonry.masonry('layout');
-                });
                 })
                 .catch(error => console.error("Failed to load gallery:", error));
-            </script>
+        </script>
     </div>
 </div>
 <!-- /.container -->
