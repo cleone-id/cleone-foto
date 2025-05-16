@@ -172,3 +172,17 @@ body:not(.gallery-dark-theme) .col .gallery-overlay {
       font: 14px arial;
     }
 </style>
+<style>
+  /* Disable text selection */
+  body {
+      user-select: none;         /* CSS modern */
+      -webkit-user-select: none; /* Safari */
+      -moz-user-select: none;    /* Firefox */
+      -ms-user-select: none;     /* IE/Edge */
+  }
+  
+  /* Optional: Disable pointer events on images (tidak bisa diklik kanan) */
+  img {
+      pointer-events: none;
+  }
+  </style>
