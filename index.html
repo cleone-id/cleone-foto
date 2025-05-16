@@ -18,9 +18,7 @@ title: "Foto Cleone.ID"
                                 img.onload = () => {
                                     img.removeAttribute('data-src');
                                     // Notify masonry that this image is loaded
-                                    if ($('#photo-container').data('masonry')) {
-                                        $('#photo-container').masonry('layout');
-                                    }
+                                    $('#photo-container').masonry('layout');
                                 };
                                 observer.unobserve(img);
                             }
@@ -102,26 +100,12 @@ title: "Foto Cleone.ID"
                             columnWidth: '.gallery-item',
                             percentPosition: true
                         });
-                        
-                        // Initialize spotlight after masonry is ready
-                        if (typeof $.spotlight === 'function') {
-                            $.spotlight();
-                        }
                     });
                     
-                    // Add a window load event to ensure everything is initialized properly
-                    // This helps with the first load issue
-                    $(window).on('load', function() {
-                        // Re-layout masonry after everything is loaded
-                        if ($masonry.data('masonry')) {
-                            $masonry.masonry('layout');
-                        }
-                        
-                        // Re-initialize spotlight
-                        if (typeof $.spotlight === 'function') {
-                            $.spotlight();
-                        }
-                    });
+                    // Initialize spotlight if needed (assuming you have spotlight.js loaded)
+                    if (typeof $.spotlight === 'function') {
+                        $.spotlight();
+                    }
                 })
                 .catch(error => console.error("Failed to load gallery:", error));
         </script>
