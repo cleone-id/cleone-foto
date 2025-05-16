@@ -6,7 +6,33 @@ title: "Foto Cleone.ID"
 <!-- Gallery -->
 <div id="portfolio" class="section gray">
     <div class="b row" id="photo-container">
+        <!-- Loading indicator shown when loading more images -->
+        <div id="loading-indicator" class="center-align" style="display: none; width: 100%; padding: 20px;">
+            <div class="preloader-wrapper small active">
+                <div class="spinner-layer spinner-blue-only">
+                    <div class="circle-clipper left">
+                        <div class="circle"></div>
+                    </div><div class="gap-patch">
+                        <div class="circle"></div>
+                    </div><div class="circle-clipper right">
+                        <div class="circle"></div>
+                    </div>
+                </div>
+            </div>
+            <p>Loading more images...</p>
+        </div>
+        
         <script>
+            // Global variables for infinite scroll
+            const galleryState = {
+                allImages: [],         // Store all images from the API
+                currentIndex: 0,       // Current position in the allImages array
+                batchSize: 12,         // Number of images to load per batch
+                loading: false,        // Flag to prevent multiple simultaneous loads
+                allLoaded: false,      // Flag to indicate when all images are loaded
+                scrollTriggerPoint: 0.8  // Trigger next load when 80% down the page
+            };
+
             // Load images only when they appear in viewport
             function setupLazyLoading() {
                 if ('IntersectionObserver' in window) {
@@ -38,76 +64,157 @@ title: "Foto Cleone.ID"
                 }
             }
 
-            fetch('https://cdn.cleone.id/foto.json')
-                .then(response => response.json())
-                .then(data => {
-                    const container = document.getElementById('photo-container');
-                    
-                    // Sort data in descending order (assumes data has a timestamp or id field)
-                    // Modify the sort key based on your actual data structure
-                    data.sort((a, b) => {
-                        // If you have a timestamp field, use that for sorting
-                        return (b.timestamp || 0) - (a.timestamp || 0);
-                        // Alternatively, if you have an ID that's sequential:
-                        // return (b.id || 0) - (a.id || 0);
-                    });
-                    
-                    data.forEach((item, index) => {
-                        const div = document.createElement('div');
-                        div.className = `col l4 m6 s12 gallery-item gallery-expand ce`;
-                        div.innerHTML = `
-                        <div class="gallery-curve-wrapper">
-                            <a class="gallery-cover gray">
-                                <img class="responsive-img" 
-                                     data-src="${item.url}" 
-                                     src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" 
-                                     alt="placeholder" 
-                                     crossorigin="anonymous" />
-                            </a>
-                            <div class="gallery-overlay spotlight" data-media="image" data-title="${item.caption}" data-src="${item.url}" data-description="${item.username}">
-                                <div class="overlay-header">
-                                    <div class="overlay-title">${item.caption}</div>
-                                </div>
-                            </div>
-                            <div class="gallery-body">
-                                <div class="title-wrapper">
-                                    <h3>${item.caption}</h3>
-                                    <span class="gj">${item.username}</span>
-                                </div>
-                                <p class="fi">
-                                    ${item.caption}
-                                </p>
-                            </div>
-                            <div class="gallery-action">
-                                <a class="btn-floating btn-large waves-effect waves-light"><i class="material-icons">favorite</i></a>
+            // Create and append gallery item elements
+            function appendGalleryItems(items) {
+                const container = document.getElementById('photo-container');
+                const loadingIndicator = document.getElementById('loading-indicator');
+                
+                // Create fragment to minimize DOM operations
+                const fragment = document.createDocumentFragment();
+                
+                items.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'col l4 m6 s12 gallery-item gallery-expand ce';
+                    div.innerHTML = `
+                    <div class="gallery-curve-wrapper">
+                        <a class="gallery-cover gray">
+                            <img class="responsive-img" 
+                                 data-src="${item.url}" 
+                                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" 
+                                 alt="placeholder" 
+                                 crossorigin="anonymous" />
+                        </a>
+                        <div class="gallery-overlay spotlight" data-media="image" data-title="${item.caption}" data-src="${item.url}" data-description="${item.username}">
+                            <div class="overlay-header">
+                                <div class="overlay-title">${item.caption}</div>
                             </div>
                         </div>
-                        `;
-                        container.appendChild(div);
-                    });
+                        <div class="gallery-body">
+                            <div class="title-wrapper">
+                                <h3>${item.caption}</h3>
+                                <span class="gj">${item.username}</span>
+                            </div>
+                            <p class="fi">
+                                ${item.caption}
+                            </p>
+                        </div>
+                        <div class="gallery-action">
+                            <a class="btn-floating btn-large waves-effect waves-light"><i class="material-icons">favorite</i></a>
+                        </div>
+                    </div>
+                    `;
+                    fragment.appendChild(div);
+                });
+                
+                // Insert the new items before the loading indicator
+                if (loadingIndicator) {
+                    container.insertBefore(fragment, loadingIndicator);
+                } else {
+                    container.appendChild(fragment);
+                }
+                
+                // Update masonry layout
+                const $masonry = $('#photo-container');
+                $masonry.imagesLoaded(() => {
+                    $masonry.masonry('reloadItems');
+                    $masonry.masonry('layout');
+                });
+                
+                // Setup lazy loading for new images
+                setupLazyLoading();
+                
+                // Initialize spotlight if needed
+                if (typeof $.spotlight === 'function') {
+                    $.spotlight();
+                }
+            }
 
-                    // Setup lazy loading
-                    setupLazyLoading();
+            // Load the next batch of images
+            function loadNextBatch() {
+                if (galleryState.loading || galleryState.allLoaded) return;
+                
+                galleryState.loading = true;
+                document.getElementById('loading-indicator').style.display = 'block';
+                
+                // Simulate a small delay to show loading (can be removed in production)
+                setTimeout(() => {
+                    const nextBatch = galleryState.allImages.slice(
+                        galleryState.currentIndex, 
+                        galleryState.currentIndex + galleryState.batchSize
+                    );
                     
-                    // Initialize masonry layout
-                    const $masonry = $('#photo-container');
-                    $masonry.imagesLoaded(() => {
-                        // No random shuffling here, maintaining sorted order
+                    if (nextBatch.length > 0) {
+                        appendGalleryItems(nextBatch);
+                        galleryState.currentIndex += nextBatch.length;
                         
-                        // Initialize masonry
-                        $masonry.masonry({
-                            itemSelector: '.gallery-item',
-                            columnWidth: '.gallery-item',
-                            percentPosition: true
-                        });
-                    });
-                    
-                    // Initialize spotlight if needed (assuming you have spotlight.js loaded)
-                    if (typeof $.spotlight === 'function') {
-                        $.spotlight();
+                        // Check if we've loaded all images
+                        if (galleryState.currentIndex >= galleryState.allImages.length) {
+                            galleryState.allLoaded = true;
+                            document.getElementById('loading-indicator').innerHTML = '<p>All images loaded</p>';
+                            // Remove the scroll event listener when all images are loaded
+                            window.removeEventListener('scroll', scrollHandler);
+                        }
+                    } else {
+                        galleryState.allLoaded = true;
+                        document.getElementById('loading-indicator').innerHTML = '<p>All images loaded</p>';
                     }
-                })
-                .catch(error => console.error("Failed to load gallery:", error));
+                    
+                    galleryState.loading = false;
+                    document.getElementById('loading-indicator').style.display = galleryState.allLoaded ? 'block' : 'none';
+                }, 500); // Small delay to make loading indicator visible
+            }
+
+            // Check if we need to load more images based on scroll position
+            function scrollHandler() {
+                if (galleryState.loading || galleryState.allLoaded) return;
+                
+                const scrollHeight = document.documentElement.scrollHeight;
+                const scrollTop = window.scrollY || document.documentElement.scrollTop;
+                const clientHeight = document.documentElement.clientHeight;
+                
+                // Calculate scroll percentage (0 to 1)
+                const scrollPercentage = (scrollTop + clientHeight) / scrollHeight;
+                
+                // Load more when user has scrolled past the trigger point
+                if (scrollPercentage > galleryState.scrollTriggerPoint) {
+                    loadNextBatch();
+                }
+            }
+
+            // Initialize the gallery
+            function initGallery() {
+                // Create the masonry layout
+                const $masonry = $('#photo-container');
+                $masonry.masonry({
+                    itemSelector: '.gallery-item',
+                    columnWidth: '.gallery-item',
+                    percentPosition: true
+                });
+                
+                // Add scroll event listener for infinite scroll
+                window.addEventListener('scroll', scrollHandler);
+                
+                // Fetch all image data
+                fetch('https://cdn.cleone.id/foto.json')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Sort data in descending order (by timestamp if available)
+                        galleryState.allImages = data.sort((a, b) => {
+                            return (b.timestamp || 0) - (a.timestamp || 0);
+                        });
+                        
+                        // Load the first batch
+                        loadNextBatch();
+                    })
+                    .catch(error => {
+                        console.error("Failed to load gallery:", error);
+                        document.getElementById('loading-indicator').innerHTML = '<p>Error loading images. Please try again later.</p>';
+                        document.getElementById('loading-indicator').style.display = 'block';
+                    });
+            }
+
+            // Run initialization when DOM is ready
+            document.addEventListener('DOMContentLoaded', initGallery);
         </script>
     </div>
 </div>
